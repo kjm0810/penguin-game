@@ -307,7 +307,7 @@ function drawScene(engine) {
   }
   ctx.setTransform(width / ICE_STAGE.width, 0, 0, height / ICE_STAGE.height, 0, 0);
   ctx.clearRect(0, 0, ICE_STAGE.width, ICE_STAGE.height);
-  engine.draw(ctx, FONT, sprites, isObs);
+  engine.draw(ctx, FONT, sprites);
 }
 
 // ---- 화면 갱신 -------------------------------------------------------------------

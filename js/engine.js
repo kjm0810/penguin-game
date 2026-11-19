@@ -425,7 +425,7 @@ var PenguinIceRaceEngine = class {
   }
   // --- 그리기 (ICE_STAGE 크기 기준) ---
   // sprites가 없으면(이미지를 아직 못 읽음) 코드로 그린 펭귄을 쓴다.
-  draw(ctx, font, sprites = null, transparent = false) {
+  draw(ctx, font, sprites = null) {
     const { width: W, height: H } = ICE_STAGE;
     const F = NEAR * ZC;
     const sFar = F / (LANE_SPAN + ZC);
@@ -438,10 +438,8 @@ var PenguinIceRaceEngine = class {
       return { x: W / 2 + (x - cam) * s, y: horizon + Hc * s, s };
     };
     const time = this.simTime;
-    if (!transparent) {
-      if (sprites) this.drawSceneryImages(ctx, project, W, H, { F, Hc, horizon }, sprites.scene);
-      else this.drawScenery(ctx, project, scaleAt, W, H);
-    }
+    if (sprites) this.drawSceneryImages(ctx, project, W, H, { F, Hc, horizon }, sprites.scene);
+    else this.drawScenery(ctx, project, scaleAt, W, H);
     const order = [...this.penguins].sort((a, b) => b.z - a.z || a.id - b.id);
     for (const penguin of order) {
       const p = project(penguin.x, penguin.z);

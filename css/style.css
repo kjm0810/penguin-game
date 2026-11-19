@@ -326,7 +326,6 @@ body.obs .preview {
   background: transparent;
 }
 
-body.obs .podium { background: transparent; }
 
 @media (max-width: 800px) {
   .layout {
