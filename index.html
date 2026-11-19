@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>펭귄 빙판 레이스</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="panel">
+        <div class="group">
+          <div class="label">경주 진행</div>
+          <div id="raceControls" class="race-controls">
+            <button id="btnStart" class="primary">▶ 경주 시작</button>
+            <button id="btnSkip" class="secondary">⏭ 결과 바로 보기</button>
+            <button id="btnReset" class="secondary">↺ 처음으로</button>
+          </div>
+          <div id="raceStatus" class="race-status"></div>
+        </div>
+
+        <div class="group">
+          <div class="label">결과</div>
+          <ol id="results" class="results"><li class="empty">경주가 끝나면 순위가 나옵니다.</li></ol>
+          <button id="btnDropWinner" class="secondary">우승자 빼고 다시 준비</button>
+        </div>
+
+        <div class="group">
+          <div class="label">참가자 <span id="racerCount" class="count"></span></div>
+          <textarea id="names" rows="8" placeholder="한 줄에 한 명씩 (쉼표로 구분해도 됩니다)"></textarea>
+          <div class="quick-fill">
+            <input id="fillPrefix" type="text" value="펭귄" aria-label="이름 앞글자" />
+            <select id="fillCount" aria-label="인원">
+              <option>5</option>
+              <option selected>10</option>
+              <option>20</option>
+              <option>30</option>
+              <option>50</option>
+            </select>
+            <button id="btnFill" class="secondary">번호로 채우기</button>
+          </div>
+          <p class="hint">2~50명. 경주 중에는 바꿀 수 없습니다. 이름이 같아도 각각 따로 달립니다.</p>
+        </div>
+
+        <div class="group">
+          <div class="label">경주 설정</div>
+          <label class="setting"
+            >경주 길이
+            <select id="duration"></select>
+          </label>
+          <label class="setting"
+            >우승 문구 ({이름} 자리에 우승자)
+            <input id="winnerText" type="text" />
+          </label>
+          <label class="setting check"
+            >효과음·배경음악 (카운트다운 · 슬라이딩 · 넘어짐 · 도착)
+            <input id="soundEnabled" type="checkbox"
+          /></label>
+        </div>
+
+        <div class="group">
+          <div class="label">OBS 화면</div>
+          <p class="hint">OBS 브라우저 소스는 이 주소 뒤에 <code>?obs=1</code>을 붙여 1920 × 1080으로 넣습니다.</p>
+          <button id="visibility" class="secondary">OBS 화면 숨기기</button>
+        </div>
+      </aside>
+
+      <main id="preview" class="preview">
+        <div id="stage" class="stage">
+          <canvas id="scene" class="scene"></canvas>
+          <div id="podium" class="podium" hidden></div>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="./js/script.js"></script>
+    <script type="module" src="./js/common-ui.js"></script>
+  </body>
+</html>
