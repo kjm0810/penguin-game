@@ -307,6 +307,7 @@ textarea {
 }
 
 /* OBS 화면: 조작판 없이 무대만 화면 가득 */
+html.obs,
 body.obs {
   background: transparent;
 }
@@ -324,6 +325,8 @@ body.obs .preview {
   inset: 0;
   background: transparent;
 }
+
+body.obs .podium { background: transparent; }
 
 @media (max-width: 800px) {
   .layout {

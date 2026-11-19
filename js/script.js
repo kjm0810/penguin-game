@@ -5,12 +5,18 @@
 // 관리자·OBS 화면은 같은 씨앗으로 같은 경주를 각자 계산한다. 경주는 1/60초 고정 간격으로만 진행하고,
 // 막판 슬로우 모션도 같은 계산으로 실제 시간에 맞추므로 위치를 주고받지 않아도 두 화면이 똑같이 보인다.
 import { ICE_DURATIONS, ICE_STAGE, PenguinIceRaceEngine, loadSprites, randomIceSeed, standings } from './engine.js';
+import { connectRoom } from './sync.js';
 
 const GAME_ID = 'penguin-race-game';
 const STORAGE_KEY = 'penguin-race-game-settings';
 const isObs = new URLSearchParams(location.search).get('obs') === '1';
 const launcher = ['localhost', '127.0.0.1'].includes(location.hostname) && location.port !== '';
-if (isObs) document.body.classList.add('obs');
+if (isObs) {
+  document.body.classList.add('obs');
+  document.documentElement.classList.add('obs');
+}
+let roomSync = null;
+const now = () => Date.now() + (roomSync?.offset || 0);
 
 const STEP = 1 / 60;
 const COUNTDOWN_SEC = 3; // 엔진은 경주 시각 -3초부터 카운트다운을 그린다
@@ -98,6 +104,7 @@ function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
+  roomSync?.publish(state);
   if (!launcher) return;
   fetch('/control', {
     method: 'POST',
@@ -259,7 +266,7 @@ function currentSim() {
     engine.advanceTo(1e9);
     return sim;
   }
-  const elapsed = (Date.now() - race.startAt) / 1000;
+  const elapsed = (now() - race.startAt) / 1000;
   let guard = 0;
   while (!engine.finished && guard++ < 200000) {
     const wallStep = STEP / engine.rate;
@@ -300,7 +307,7 @@ function drawScene(engine) {
   }
   ctx.setTransform(width / ICE_STAGE.width, 0, 0, height / ICE_STAGE.height, 0, 0);
   ctx.clearRect(0, 0, ICE_STAGE.width, ICE_STAGE.height);
-  engine.draw(ctx, FONT, sprites);
+  engine.draw(ctx, FONT, sprites, isObs);
 }
 
 // ---- 화면 갱신 -------------------------------------------------------------------
@@ -465,7 +472,7 @@ if (!isObs) {
     if (state.names.length < MIN_RACERS) return;
     state.race = {
       seed: randomIceSeed(),
-      startAt: Date.now() + 300,
+      startAt: now() + 2000,
       names: [...state.names],
       duration: state.duration,
       skipped: false,
@@ -526,15 +533,19 @@ if (!isObs) {
 // ---- 시작 ---------------------------------------------------------------------
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (saved) state = sanitize(saved);
+  if (saved && (!isObs || launcher)) state = sanitize(saved);
 } catch {}
 
 if (launcher) {
   await loadLauncher();
   connectEvents();
+} else {
+  roomSync = await connectRoom({ isObs, applyRemote });
+  if (!isObs) roomSync.publish(state);
 }
 // 같은 브라우저의 다른 탭(OBS 미리보기 등)과는 localStorage로도 맞춘다(런처 없이 열었을 때 대비).
 window.addEventListener('storage', (e) => {
+  if (isObs && !launcher) return;
   if (e.key !== STORAGE_KEY || !e.newValue) return;
   try {
     applyRemote(JSON.parse(e.newValue));
