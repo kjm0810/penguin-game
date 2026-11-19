@@ -164,12 +164,19 @@ const BGM = { chase: { file: 'bgm-chase', gain: 0.22, loopEnd: 64.0 }, suspense:
 const SND_GAP = { grab: 0.6 }; // 슬라이딩·넘어짐은 간격 없이 한 번 한 번 다 낸다
 
 let audioCtx = null;
+let previewSoundEnabled = false;
+let masterGain = null;
+const canHearAudio = () => isObs ? state.soundEnabled : previewSoundEnabled;
 const sndBuf = {};
 const sndLast = {};
 function audio() {
-  if (!isObs || !state.soundEnabled) return null;
+  if (!canHearAudio()) return null;
   try {
-    audioCtx ??= new AudioContext();
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+      masterGain = audioCtx.createGain();
+      masterGain.connect(audioCtx.destination);
+    }
     return audioCtx;
   } catch {
     return null;
@@ -204,7 +211,7 @@ function sfx(name) {
   g.gain.setValueAtTime(s.gain, a.currentTime);
   g.gain.setValueAtTime(s.gain, a.currentTime + Math.max(0, dur - (s.fade || 0.08)));
   g.gain.linearRampToValueAtTime(0, a.currentTime + dur);
-  src.connect(g).connect(a.destination);
+  src.connect(g).connect(masterGain);
   src.start(0, s.from, dur);
 }
 let bgmNow = { name: null, src: null, gain: null };
@@ -237,7 +244,7 @@ function setBgm(name, offset = 0) {
   src.loopEnd = loopEnd;
   g.gain.setValueAtTime(0, a.currentTime);
   g.gain.linearRampToValueAtTime(b.gain, a.currentTime + 0.4);
-  src.connect(g).connect(a.destination);
+  src.connect(g).connect(masterGain);
   src.start(0, Math.max(0, offset) % loopEnd);
   bgmNow = { name, src, gain: g };
 }
@@ -382,9 +389,9 @@ function renderPodium(phase, current) {
 // 화면을 늦게 열어 한꺼번에 따라잡은 프레임에서는 소리를 내지 않는다.
 let soundSim = null; // { key, states, wall, firstPlaced }
 function renderSounds(phase, current) {
-  if (!isObs) return;
+  if (masterGain) masterGain.gain.setValueAtTime(canHearAudio() ? 1 : 0, audioCtx.currentTime);
   // 배경음악
-  if (phase === 'running' && state.soundEnabled) setBgm(current.engine.rate < 1 ? 'suspense' : 'chase', current.engine.rate < 1 ? 0 : current.engine.time);
+  if (phase === 'running' && canHearAudio()) setBgm(current.engine.rate < 1 ? 'suspense' : 'chase', current.engine.rate < 1 ? 0 : current.engine.time);
   else if (bgmNow.name) stopBgm(phase === 'done' ? 1.5 : 0.4);
 
   if (phase === 'countdown') {
@@ -464,6 +471,24 @@ function loop() {
 
 // ---- 조작판 ---------------------------------------------------------------------
 if (!isObs) {
+  $('previewSound').addEventListener('click', async () => {
+    previewSoundEnabled = !previewSoundEnabled;
+    $('previewSound').textContent = previewSoundEnabled ? '조작 화면 음소거' : '조작 화면 소리 켜기';
+    $('previewSound').setAttribute('aria-pressed', String(previewSoundEnabled));
+    render();
+    if (previewSoundEnabled) {
+      const context = audio();
+      try {
+        await context?.resume();
+        await loadSounds();
+      } catch {
+        previewSoundEnabled = false;
+        $('previewSound').textContent = '조작 화면 소리 켜기';
+        $('previewSound').setAttribute('aria-pressed', 'false');
+        render();
+      }
+    }
+  });
   $('duration').innerHTML = ICE_DURATIONS.map(
     (option) => `<option value="${option.value}">${option.label} (약 ${option.value}초)</option>`
   ).join('');
